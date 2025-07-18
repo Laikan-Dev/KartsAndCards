@@ -1,0 +1,71 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Pawn.h"
+#include "KartPawnBase.generated.h"
+
+class UStaticMeshComponent;
+class UBoxComponent;
+class USpringArmComponent;
+class UCameraComponent;
+
+UCLASS()
+class KARTSANDCARS_API AKartPawnBase : public APawn
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this pawn's properties
+	AKartPawnBase();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	USceneComponent* RootComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UStaticMeshComponent* KartMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UBoxComponent* CollisionBox;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	USpringArmComponent* SpringArm;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	UCameraComponent* Camera;
+
+	// Wheel components for the kart
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	USceneComponent* FLWheel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	USceneComponent* FRWheel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	USceneComponent* BLWheel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	USceneComponent* BRWheel;
+
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float KartBoucingForce = 90000.f; // Force applied to the wheels for suspension
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	TArray<USceneComponent*> Wheels; // Array to hold all wheel components
+
+public:	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	// Function to handle suspension for the kart
+	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
+	void HandleSuspension(USceneComponent* WheelComp);
+
+};
