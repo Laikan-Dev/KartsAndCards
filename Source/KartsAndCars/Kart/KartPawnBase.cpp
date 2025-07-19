@@ -7,6 +7,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 
 // Sets default values
@@ -16,18 +17,17 @@ AKartPawnBase::AKartPawnBase()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Create and set up the root component
-	RootComp = CreateDefaultSubobject<USceneComponent>(TEXT("RootComp"));
-	RootComponent = RootComp;
+	//RootComp = CreateDefaultSubobject<USceneComponent>(TEXT("RootComp"));
 
 	// Set the box collision component
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	CollisionBox->SetupAttachment(RootComp);
 	CollisionBox->SetCollisionResponseToAllChannels(ECR_Block);
 
 	// Set config for the boucing
 	CollisionBox->SetSimulatePhysics(true);
 	CollisionBox->SetLinearDamping(3.f);
 	CollisionBox->SetAngularDamping(5.f);
+	RootComponent = CollisionBox;
 
 
 	// Create and set up the Kart mesh component
@@ -73,30 +73,36 @@ void AKartPawnBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	HandleSuspension(FLWheel);
-	HandleSuspension(FRWheel);
-	HandleSuspension(BLWheel);
-	HandleSuspension(BRWheel);
+	for (USceneComponent* Wheel : Wheels)
+	{
+		if (Wheel)
+		{
+			HandleSuspension(Wheel);
+		}
+	}
 }
 
 // Called to bind functionality to input
 void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
 void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 {
 	FHitResult HitResult;
-	FVector Start = WheelComp->GetRelativeLocation();
+	FVector Start = WheelComp->GetComponentLocation();
 	FVector End =Start + FVector(0.0, 0.0, -60.0);
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
 
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility);
-	if(HitResult.bBlockingHit)
+	bool TraceResult = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), Start, End, ObjectTypes, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OUT HitResult, true);
+	if(TraceResult)
 	{
 		FVector DirectionResult = UKismetMathLibrary::GetDirectionUnitVector(HitResult.TraceEnd, HitResult.TraceStart);
-		float DistanceResult = UKismetMathLibrary::NormalizeToRange(HitResult.Distance, 0.0f, 60.0f) - 1.0f;
+		float DistanceResult =  1.f - UKismetMathLibrary::NormalizeToRange(HitResult.Distance, 0.0f, 60.0f);
 		FVector ForceDirection = DistanceResult * DirectionResult * KartBoucingForce;
 		CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
 	}
