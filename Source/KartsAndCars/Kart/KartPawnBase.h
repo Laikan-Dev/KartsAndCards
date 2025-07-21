@@ -59,11 +59,23 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	USceneComponent* FLWheel;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	UStaticMeshComponent* FLWheelMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	USceneComponent* FRWheel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	UStaticMeshComponent* FRWheelMesh;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	USceneComponent* BLWheel;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	UStaticMeshComponent* BLWheelMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	USceneComponent* BRWheel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	UStaticMeshComponent* BRWheelMesh;
+
 
 
 public:
@@ -78,6 +90,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	TArray<USceneComponent*> Wheels; // Array to hold all wheel components
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	TArray<UStaticMeshComponent*> WheelMeshes; // Array to hold all wheel meshes
 
 public:	
 	// Called every frame
@@ -95,6 +110,10 @@ public:
 
 	//Input action Functions
 	void Accelerate(const FInputActionValue& Value);
+	void CalculateAcceleratingBouce(USceneComponent* WheelComp);
 	void Steer(const FInputActionValue& Value);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Kart Functions")
+	bool bIsOnTheGround();
 
 };

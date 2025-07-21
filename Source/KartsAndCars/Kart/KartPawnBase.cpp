@@ -27,6 +27,7 @@ AKartPawnBase::AKartPawnBase()
 
 	// Set the box collision component
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	CollisionBox->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Ignore);
 	CollisionBox->SetCollisionResponseToAllChannels(ECR_Block);
 
 	// Set config for the boucing
@@ -43,7 +44,8 @@ AKartPawnBase::AKartPawnBase()
 	// Set the spring arm component
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(CollisionBox);
-	SpringArm->bUsePawnControlRotation = true; // Allow the spring arm to use the pawn's control rotation
+	SpringArm->bUsePawnControlRotation = false; // Allow the spring arm to use the pawn's control rotation
+	SpringArm->bEnableCameraRotationLag = true; // Enable camera rotation lag
 
 	// Set the camera component
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
@@ -52,12 +54,28 @@ AKartPawnBase::AKartPawnBase()
 	// Create wheel components and attach them to the root component
 	FLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FLWheel"));
 	FLWheel->SetupAttachment(CollisionBox);
+	FLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FLWheelMesh"));
+	FLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	FLWheelMesh->SetupAttachment(FLWheel);
+
 	FRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FRWheel"));
 	FRWheel->SetupAttachment(CollisionBox);
+	FRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FRWheelMesh"));
+	FRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	FRWheelMesh->SetupAttachment(FRWheel);
+
 	BLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BLWheel"));
 	BLWheel->SetupAttachment(CollisionBox);
+	BLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BLWheelMesh"));
+	BLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	BLWheelMesh->SetupAttachment(BLWheel);
+
 	BRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BRWheel"));
 	BRWheel->SetupAttachment(CollisionBox);
+	BRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BRWheelMesh"));
+	BRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	BRWheelMesh->SetupAttachment(BRWheel);
+
 }
 
 // Called when the game starts or when spawned
@@ -65,13 +83,20 @@ void AKartPawnBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (FLWheel && FRWheel && BLWheel && BRWheel)
+	//Adding wheel components to the Wheels array
+	Wheels.Add(FLWheel);
+	Wheels.Add(FRWheel);
+	Wheels.Add(BLWheel);
+	Wheels.Add(BRWheel);
+
+	if (FLWheelMesh && FRWheelMesh && BLWheelMesh && BRWheelMesh)
 	{
-		Wheels.Add(FLWheel);
-		Wheels.Add(FRWheel);
-		Wheels.Add(BLWheel);
-		Wheels.Add(BRWheel);
+		WheelMeshes.Add(FLWheelMesh);
+		WheelMeshes.Add(FRWheelMesh);
+		WheelMeshes.Add(BLWheelMesh);
+		WheelMeshes.Add(BRWheelMesh);
 	}
+
 }
 
 // Called every frame
@@ -124,19 +149,21 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 	ActorsToIgnore.Add(this);
 
 	bool TraceResult = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), Start, End, ObjectTypes, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OUT HitResult, true);
-	if(TraceResult)
+	if (HitResult.bBlockingHit)
 	{
 		FVector DirectionResult = UKismetMathLibrary::GetDirectionUnitVector(HitResult.TraceEnd, HitResult.TraceStart);
-		float DistanceResult =  1.f - UKismetMathLibrary::NormalizeToRange(HitResult.Distance, 0.0f, 60.0f);
+		float DistanceResult = 1.f - UKismetMathLibrary::NormalizeToRange(HitResult.Distance, 0.0f, 60.0f);
 		FVector ForceDirection = DistanceResult * DirectionResult * KartBoucingForce;
 		CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
 
-		FVector MovingBouce = CollisionBox->GetForwardVector() * 10000.f * AccelerationInput * CollisionBox->GetMass();
-		CollisionBox->AddForceAtLocation(MovingBouce, WheelComp->GetComponentToWorld().GetLocation());
-
-		FVector CenterOfMass = FVector(50.f, 0.f, 0.f) * AccelerationInput; // Adjust the center of mass based on acceleration input
-		CollisionBox->SetCenterOfMass(CenterOfMass);
-
+		float WheelBoucingDistance = HitResult.Distance * -1.f + 32.f; // Adjust the distance to apply the boucing force
+		float WheelLocationZ = FMath::FInterpTo(WheelComp->GetChildComponent(0)->GetRelativeLocation().Z, WheelBoucingDistance, GetWorld()->GetDeltaSeconds(), 3.f);
+		FVector WheelLocation(0.f, 0.f, WheelLocationZ);
+		WheelComp->GetChildComponent(0)->SetRelativeLocation(WheelLocation);
+	}
+	else
+	{
+		CalculateAcceleratingBouce(WheelComp);
 	}
 }
 
@@ -144,12 +171,27 @@ void AKartPawnBase::CalculateAccelerationForce()
 {
 	AccelerationForce = AccelerationInput * FMath::Lerp(0.0, 15000.0, AccelerationInput);
 	AccelerationInput = FMath::FInterpTo(AccelerationInput, 0.0, GetWorld()->GetDeltaSeconds(), 0.3);
+
+	for (UStaticMeshComponent* Wheel : WheelMeshes)
+	{
+		Wheel->AddLocalRotation(FRotator(AccelerationForce / -1000, 0.0f, 0.0f));
+	}
 }
 
 void AKartPawnBase::Accelerate(const FInputActionValue& Value)
 {
+	float Target = UKismetMathLibrary::SelectFloat(Value.Get<float>(), 0.0, bIsOnTheGround());
 	AccelerationInput = FMath::FInterpTo(AccelerationInput, Value.Get<float>(), GetWorld()->GetDeltaSeconds(), 0.5);
 
+}
+
+void AKartPawnBase::CalculateAcceleratingBouce(USceneComponent* WheelComp)
+{
+	FVector MovingBouce = CollisionBox->GetForwardVector() * 10000.f * AccelerationInput * CollisionBox->GetMass();
+	CollisionBox->AddForceAtLocation(MovingBouce, WheelComp->GetComponentToWorld().GetLocation());
+
+	FVector CenterOfMass = FVector(50.f, 0.f, 0.f) * AccelerationInput; // Adjust the center of mass based on acceleration input
+	CollisionBox->SetCenterOfMass(CenterOfMass);
 }
 
 void AKartPawnBase::Steer(const FInputActionValue& Value)
@@ -157,5 +199,25 @@ void AKartPawnBase::Steer(const FInputActionValue& Value)
 	float SteeringInput = Value.Get<float>() * 1000000 * AccelerationInput;
 	FVector Torque = FVector(0.0, 0.0, SteeringInput);
 	CollisionBox->AddTorqueInRadians(Torque);
+
+	float RotationToFrontWheels = FMath::FInterpTo(FRWheel->GetRelativeRotation().Yaw, Value.Get<float>(), GetWorld()->GetDeltaSeconds(), 3.0f);
+
+	FLWheel->SetRelativeRotation(FRotator(0.0f, RotationToFrontWheels, 0.0f));
+	FRWheel->SetRelativeRotation(FRotator(0.0f, RotationToFrontWheels, 0.0f));
+}
+
+bool AKartPawnBase::bIsOnTheGround()
+{
+	FHitResult HitResult;
+	FVector Start = GetActorLocation();
+	FVector End = Start - FVector(0.f, 0.f, 35.f); // Check 60 units down from the kart's position
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	bool TraceResult = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), Start, End, ObjectTypes, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OUT HitResult, true);
+
+	return TraceResult;
 }
 
