@@ -108,6 +108,7 @@ void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		//Bind the action inputs
 
 		EnhancedInputComponent->BindAction(AcelerateAction, ETriggerEvent::Triggered, this, &AKartPawnBase::Accelerate);
+		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AKartPawnBase::Steer);
 	}
 }
 
@@ -149,5 +150,12 @@ void AKartPawnBase::Accelerate(const FInputActionValue& Value)
 {
 	AccelerationInput = FMath::FInterpTo(AccelerationInput, Value.Get<float>(), GetWorld()->GetDeltaSeconds(), 0.5);
 
+}
+
+void AKartPawnBase::Steer(const FInputActionValue& Value)
+{
+	float SteeringInput = Value.Get<float>() * 1000000 * AccelerationInput;
+	FVector Torque = FVector(0.0, 0.0, SteeringInput);
+	CollisionBox->AddTorqueInRadians(Torque);
 }
 

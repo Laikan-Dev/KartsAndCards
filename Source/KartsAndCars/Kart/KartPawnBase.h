@@ -49,6 +49,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Input")
 	UInputAction* AcelerateAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Input")
+	UInputAction* SteeringAction;
+
 	
 	
 	
@@ -92,5 +95,6 @@ public:
 
 	//Input action Functions
 	void Accelerate(const FInputActionValue& Value);
+	void Steer(const FInputActionValue& Value);
 
 };
