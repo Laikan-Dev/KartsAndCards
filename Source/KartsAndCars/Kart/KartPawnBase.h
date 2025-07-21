@@ -10,6 +10,9 @@ class UStaticMeshComponent;
 class UBoxComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UInputMappingContext;
+class UInputAction;
+struct FInputActionValue;
 
 UCLASS()
 class KARTSANDCARS_API AKartPawnBase : public APawn
@@ -38,7 +41,17 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	UCameraComponent* Camera;
+	// Input mapping context for the kart
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Input")
+	UInputMappingContext* KartInputMappingContext;
 
+	// Input action for moving the kart
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Input")
+	UInputAction* AcelerateAction;
+
+	
+	
+	
 	// Wheel components for the kart
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	USceneComponent* FLWheel;
@@ -55,6 +68,12 @@ public:
 	float KartBoucingForce = 90000.f; // Force applied to the wheels for suspension
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float AccelerationForce;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float AccelerationInput;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	TArray<USceneComponent*> Wheels; // Array to hold all wheel components
 
 public:	
@@ -67,5 +86,11 @@ public:
 	// Function to handle suspension for the kart
 	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
 	void HandleSuspension(USceneComponent* WheelComp);
+	//Calculate the aceleration force based on the kart's speed
+	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
+	void CalculateAccelerationForce();
+
+	//Input action Functions
+	void Accelerate(const FInputActionValue& Value);
 
 };

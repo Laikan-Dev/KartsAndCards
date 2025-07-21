@@ -8,6 +8,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "KartPlayerController.h"
+#include "GameFramework/Controller.h"
+#include "Engine/LocalPlayer.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
+#include "InputActionValue.h"
 
 
 // Sets default values
@@ -72,7 +78,7 @@ void AKartPawnBase::BeginPlay()
 void AKartPawnBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	//apply boucing force to the kart
 	for (USceneComponent* Wheel : Wheels)
 	{
 		if (Wheel)
@@ -80,19 +86,37 @@ void AKartPawnBase::Tick(float DeltaTime)
 			HandleSuspension(Wheel);
 		}
 	}
+	CalculateAccelerationForce();
 }
 
 // Called to bind functionality to input
 void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	//Add the input mapping context for the kart
+	if (AKartPlayerController* PlayerController = Cast<AKartPlayerController>(GetController()))
+	{
+		if(UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(KartInputMappingContext, 0);
+		}
+	}
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		//Bind the action inputs
+
+		EnhancedInputComponent->BindAction(AcelerateAction, ETriggerEvent::Triggered, this, &AKartPawnBase::Accelerate);
+	}
 }
 
 void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
+
 {
 	FHitResult HitResult;
 	FVector Start = WheelComp->GetComponentLocation();
-	FVector End =Start + FVector(0.0, 0.0, -60.0);
+	FVector End = Start + WheelComp->GetUpVector() * -60.f;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 	TArray<AActor*> ActorsToIgnore;
@@ -105,6 +129,25 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 		float DistanceResult =  1.f - UKismetMathLibrary::NormalizeToRange(HitResult.Distance, 0.0f, 60.0f);
 		FVector ForceDirection = DistanceResult * DirectionResult * KartBoucingForce;
 		CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
+
+		FVector MovingBouce = CollisionBox->GetForwardVector() * 10000.f * AccelerationInput * CollisionBox->GetMass();
+		CollisionBox->AddForceAtLocation(MovingBouce, WheelComp->GetComponentToWorld().GetLocation());
+
+		FVector CenterOfMass = FVector(50.f, 0.f, 0.f) * AccelerationInput; // Adjust the center of mass based on acceleration input
+		CollisionBox->SetCenterOfMass(CenterOfMass);
+
 	}
+}
+
+void AKartPawnBase::CalculateAccelerationForce()
+{
+	AccelerationForce = AccelerationInput * FMath::Lerp(0.0, 15000.0, AccelerationInput);
+	AccelerationInput = FMath::FInterpTo(AccelerationInput, 0.0, GetWorld()->GetDeltaSeconds(), 0.3);
+}
+
+void AKartPawnBase::Accelerate(const FInputActionValue& Value)
+{
+	AccelerationInput = FMath::FInterpTo(AccelerationInput, Value.Get<float>(), GetWorld()->GetDeltaSeconds(), 0.5);
+
 }
 

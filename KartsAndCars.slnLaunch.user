@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "Novo Perfil",
+    "Projects": [
+      {
+        "Path": "Intermediate\\ProjectFiles\\KartsAndCars.vcxproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
