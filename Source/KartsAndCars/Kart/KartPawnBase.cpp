@@ -236,8 +236,13 @@ void AKartPawnBase::GetTrackProgress()
 	{
 		FVector ClosestLocation = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
 		float TrackProgress = TrackSpline->SplineComponent->GetDistanceAlongSplineAtLocation(ClosestLocation, ESplineCoordinateSpace::World);
+
+		// Normalize the track progress to a value between 0 and 1
+		FVector LocatToNormalize = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
+		float Dot = UKismetMathLibrary::Dot_VectorVector(LocatToNormalize, GetActorForwardVector());
+		FString Message = UKismetMathLibrary::SelectString(TEXT("CorrectDirection"), TEXT("WrongDirection"), Dot > 0.f);
 		// Log the track progress
-		UE_LOG(LogTemp, Warning, TEXT("Track Progress: %f"), TrackProgress);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Track Progress: %.2f, %s"), TrackProgress, *Message));
 
 	}
 	else
