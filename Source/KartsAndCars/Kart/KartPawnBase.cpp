@@ -14,6 +14,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
+#include "Kismet/GameplayStatics.h"
+#include "KartsAndCars/Track/TrackSpline.h"
+#include "Components/SplineComponent.h"
 
 
 // Sets default values
@@ -96,7 +99,8 @@ void AKartPawnBase::BeginPlay()
 		WheelMeshes.Add(BLWheelMesh);
 		WheelMeshes.Add(BRWheelMesh);
 	}
-
+	TSubclassOf<ATrackSpline> TrackSplineClass = ATrackSpline::StaticClass();
+	TrackSpline = Cast<ATrackSpline>(UGameplayStatics::GetActorOfClass(GetWorld(), TrackSplineClass));
 }
 
 // Called every frame
@@ -112,6 +116,7 @@ void AKartPawnBase::Tick(float DeltaTime)
 		}
 	}
 	CalculateAccelerationForce();
+	GetTrackProgress();
 }
 
 // Called to bind functionality to input
@@ -141,10 +146,11 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 
 {
 	FHitResult HitResult;
-	FVector Start = WheelComp->GetComponentLocation();
-	FVector End = Start + WheelComp->GetUpVector() * -60.f;
+	FVector Start = WheelComp->GetComponentToWorld().GetLocation();
+	FVector End = WheelComp->GetUpVector() * -60.f + Start;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);
 
@@ -160,6 +166,7 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 		float WheelLocationZ = FMath::FInterpTo(WheelComp->GetChildComponent(0)->GetRelativeLocation().Z, WheelBoucingDistance, GetWorld()->GetDeltaSeconds(), 3.f);
 		FVector WheelLocation(0.f, 0.f, WheelLocationZ);
 		WheelComp->GetChildComponent(0)->SetRelativeLocation(WheelLocation);
+		CalculateAcceleratingBouce(WheelComp);
 	}
 	else
 	{
@@ -174,7 +181,7 @@ void AKartPawnBase::CalculateAccelerationForce()
 
 	for (UStaticMeshComponent* Wheel : WheelMeshes)
 	{
-		Wheel->AddLocalRotation(FRotator(AccelerationForce / -1000, 0.0f, 0.0f));
+		Wheel->AddLocalRotation(FRotator(AccelerationForce / -1000.0f, 0.0f, 0.0f));
 	}
 }
 
@@ -187,10 +194,12 @@ void AKartPawnBase::Accelerate(const FInputActionValue& Value)
 
 void AKartPawnBase::CalculateAcceleratingBouce(USceneComponent* WheelComp)
 {
-	FVector MovingBouce = CollisionBox->GetForwardVector() * 10000.f * AccelerationInput * CollisionBox->GetMass();
-	CollisionBox->AddForceAtLocation(MovingBouce, WheelComp->GetComponentToWorld().GetLocation());
+	FVector MovingBouce = CollisionBox->GetForwardVector() * 2000.f * AccelerationInput * CollisionBox->GetMass();
+	FVector ForceCalc = UKismetMathLibrary::SelectVector(FVector::ZeroVector, FVector(0.0, 0.0, -30000.0), bIsOnTheGround());
+	FVector ForceDirection = MovingBouce + ForceCalc;
+	CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
 
-	FVector CenterOfMass = FVector(50.f, 0.f, 0.f) * AccelerationInput; // Adjust the center of mass based on acceleration input
+	FVector CenterOfMass = FVector(-50.f, 0.f, 0.f) * AccelerationInput; // Adjust the center of mass based on acceleration input
 	CollisionBox->SetCenterOfMass(CenterOfMass);
 }
 
@@ -219,5 +228,21 @@ bool AKartPawnBase::bIsOnTheGround()
 	bool TraceResult = UKismetSystemLibrary::LineTraceSingleForObjects(GetWorld(), Start, End, ObjectTypes, false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OUT HitResult, true);
 
 	return TraceResult;
+}
+
+void AKartPawnBase::GetTrackProgress()
+{
+	if (TrackSpline)
+	{
+		FVector ClosestLocation = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
+		float TrackProgress = TrackSpline->SplineComponent->GetDistanceAlongSplineAtLocation(ClosestLocation, ESplineCoordinateSpace::World);
+		// Log the track progress
+		UE_LOG(LogTemp, Warning, TEXT("Track Progress: %f"), TrackProgress);
+
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TrackSpline is not set or not found!"));
+	}
 }
 

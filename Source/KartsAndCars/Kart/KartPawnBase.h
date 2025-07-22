@@ -94,6 +94,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	TArray<UStaticMeshComponent*> WheelMeshes; // Array to hold all wheel meshes
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Track Properties")
+	class ATrackSpline* TrackSpline;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -115,5 +118,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Kart Functions")
 	bool bIsOnTheGround();
+
+	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
+	void GetTrackProgress();
 
 };
