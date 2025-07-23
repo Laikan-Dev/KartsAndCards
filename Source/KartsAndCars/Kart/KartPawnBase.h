@@ -97,6 +97,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Track Properties")
 	class ATrackSpline* TrackSpline;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boosts Settings")
+	float SpeedModifier = 1.0f; // Speed modifier for the kart;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -120,6 +123,6 @@ public:
 	bool bIsOnTheGround();
 
 	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
-	void GetTrackProgress();
+	bool GetTrackProgress();
 
 };

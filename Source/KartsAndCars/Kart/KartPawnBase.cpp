@@ -194,7 +194,7 @@ void AKartPawnBase::Accelerate(const FInputActionValue& Value)
 
 void AKartPawnBase::CalculateAcceleratingBouce(USceneComponent* WheelComp)
 {
-	FVector MovingBouce = CollisionBox->GetForwardVector() * 2000.f * AccelerationInput * CollisionBox->GetMass();
+	FVector MovingBouce = CollisionBox->GetForwardVector() * 2000.f * AccelerationInput * CollisionBox->GetMass() * SpeedModifier;
 	FVector ForceCalc = UKismetMathLibrary::SelectVector(FVector::ZeroVector, FVector(0.0, 0.0, -30000.0), bIsOnTheGround());
 	FVector ForceDirection = MovingBouce + ForceCalc;
 	CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
@@ -230,7 +230,7 @@ bool AKartPawnBase::bIsOnTheGround()
 	return TraceResult;
 }
 
-void AKartPawnBase::GetTrackProgress()
+bool AKartPawnBase::GetTrackProgress()
 {
 	if (TrackSpline)
 	{
@@ -240,14 +240,9 @@ void AKartPawnBase::GetTrackProgress()
 		// Normalize the track progress to a value between 0 and 1
 		FVector LocatToNormalize = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
 		float Dot = UKismetMathLibrary::Dot_VectorVector(LocatToNormalize, GetActorForwardVector());
-		FString Message = UKismetMathLibrary::SelectString(TEXT("CorrectDirection"), TEXT("WrongDirection"), Dot > 0.f);
-		// Log the track progress
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Track Progress: %.2f, %s"), TrackProgress, *Message));
-
+		bool bIsOnTrack = (Dot > 0.f);
+		return bIsOnTrack;
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TrackSpline is not set or not found!"));
-	}
+	return false;
 }
 
