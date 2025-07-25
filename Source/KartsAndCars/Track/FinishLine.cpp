@@ -41,13 +41,13 @@ void AFinishLine::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp, A
 	{
 		if (PlayerKart->GetTrackProgress())
 		{
-			float Value = LapCount + 1;
-			LapCount = FMath::Clamp(Value, 0, 4); // Ensure LapCount does not go below 0
+			float Value = PlayerKart->Laps + 1;
+			PlayerKart->Laps = FMath::Clamp(Value, 0, 4); // Ensure LapCount does not go below 0
 		}
 		else
 		{
-			float Value = LapCount - 1;
-			LapCount = FMath::Clamp(Value, 0, 4); // Ensure LapCount does not go below 0
+			float Value = PlayerKart->Laps - 1;
+			PlayerKart->Laps = FMath::Clamp(Value, 0, 4); // Ensure LapCount does not go below 0
 
 		}
 	}

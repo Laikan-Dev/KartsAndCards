@@ -13,7 +13,7 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-
+class ATrackSpline;
 UCLASS()
 class KARTSANDCARS_API AKartPawnBase : public APawn
 {
@@ -76,6 +76,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	UStaticMeshComponent* BRWheelMesh;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float WheelRadius = 32.f; // Radius of the wheels for suspension calculations
+
 
 
 public:
@@ -95,10 +98,13 @@ public:
 	TArray<UStaticMeshComponent*> WheelMeshes; // Array to hold all wheel meshes
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Track Properties")
-	class ATrackSpline* TrackSpline;
+	ATrackSpline* TrackSpline;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boosts Settings")
 	float SpeedModifier = 1.0f; // Speed modifier for the kart;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Track")
+	int32 Laps;
 
 public:	
 	// Called every frame
@@ -115,9 +121,17 @@ public:
 	void CalculateAccelerationForce();
 
 	//Input action Functions
-	void Accelerate(const FInputActionValue& Value);
+	void AccelerateEntry(const FInputActionValue& Value);
+	virtual void Accelerate(float Value);
 	void CalculateAcceleratingBouce(USceneComponent* WheelComp);
-	void Steer(const FInputActionValue& Value);
+	void SteerEntry(const FInputActionValue& Value);
+	virtual void Steer(float Value);
+
+	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
+	void BoostKart(float Speed, float Time);
+
+	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
+	void ResetBoost();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Kart Functions")
 	bool bIsOnTheGround();

@@ -28,8 +28,17 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	//Modifier for the boost speed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost Settings")
+	float BoostSpeedModifier = 2.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost Settings")
+	float BoostDuration = 5.0f; // Duration of the boost effect in seconds
 
 };

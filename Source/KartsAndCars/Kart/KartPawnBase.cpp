@@ -137,8 +137,8 @@ void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	{
 		//Bind the action inputs
 
-		EnhancedInputComponent->BindAction(AcelerateAction, ETriggerEvent::Triggered, this, &AKartPawnBase::Accelerate);
-		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AKartPawnBase::Steer);
+		EnhancedInputComponent->BindAction(AcelerateAction, ETriggerEvent::Triggered, this, &AKartPawnBase::AccelerateEntry);
+		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AKartPawnBase::SteerEntry);
 	}
 }
 
@@ -162,7 +162,7 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 		FVector ForceDirection = DistanceResult * DirectionResult * KartBoucingForce;
 		CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
 
-		float WheelBoucingDistance = HitResult.Distance * -1.f + 32.f; // Adjust the distance to apply the boucing force
+		float WheelBoucingDistance = HitResult.Distance * -1.f + WheelRadius; // Adjust the distance to apply the boucing force
 		float WheelLocationZ = FMath::FInterpTo(WheelComp->GetChildComponent(0)->GetRelativeLocation().Z, WheelBoucingDistance, GetWorld()->GetDeltaSeconds(), 3.f);
 		FVector WheelLocation(0.f, 0.f, WheelLocationZ);
 		WheelComp->GetChildComponent(0)->SetRelativeLocation(WheelLocation);
@@ -185,11 +185,15 @@ void AKartPawnBase::CalculateAccelerationForce()
 	}
 }
 
-void AKartPawnBase::Accelerate(const FInputActionValue& Value)
+void AKartPawnBase::AccelerateEntry(const FInputActionValue& Value)
 {
-	float Target = UKismetMathLibrary::SelectFloat(Value.Get<float>(), 0.0, bIsOnTheGround());
-	AccelerationInput = FMath::FInterpTo(AccelerationInput, Value.Get<float>(), GetWorld()->GetDeltaSeconds(), 0.5);
+	Accelerate(Value.Get<float>());
+}
 
+void AKartPawnBase::Accelerate(float Value)
+{
+	float Target = UKismetMathLibrary::SelectFloat(Value, 0.0, bIsOnTheGround());
+	AccelerationInput = FMath::FInterpTo(AccelerationInput, Value, GetWorld()->GetDeltaSeconds(), 0.5);
 }
 
 void AKartPawnBase::CalculateAcceleratingBouce(USceneComponent* WheelComp)
@@ -203,16 +207,33 @@ void AKartPawnBase::CalculateAcceleratingBouce(USceneComponent* WheelComp)
 	CollisionBox->SetCenterOfMass(CenterOfMass);
 }
 
-void AKartPawnBase::Steer(const FInputActionValue& Value)
+void AKartPawnBase::SteerEntry(const FInputActionValue& Value)
 {
-	float SteeringInput = Value.Get<float>() * 1000000 * AccelerationInput;
+	Steer(Value.Get<float>());
+}
+
+void AKartPawnBase::Steer(float Value)
+{
+	float SteeringInput = Value * 1000000 * AccelerationInput;
 	FVector Torque = FVector(0.0, 0.0, SteeringInput);
 	CollisionBox->AddTorqueInRadians(Torque);
 
-	float RotationToFrontWheels = FMath::FInterpTo(FRWheel->GetRelativeRotation().Yaw, Value.Get<float>(), GetWorld()->GetDeltaSeconds(), 3.0f);
+	float RotationToFrontWheels = FMath::FInterpTo(FRWheel->GetRelativeRotation().Yaw, Value, GetWorld()->GetDeltaSeconds(), 3.0f);
 
 	FLWheel->SetRelativeRotation(FRotator(0.0f, RotationToFrontWheels, 0.0f));
 	FRWheel->SetRelativeRotation(FRotator(0.0f, RotationToFrontWheels, 0.0f));
+}
+
+void AKartPawnBase::BoostKart(float Speed, float Time)
+{
+	SpeedModifier = Speed; // Set the speed modifier to the boost speed
+	FTimerHandle BoostTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(BoostTimerHandle, this, &AKartPawnBase::ResetBoost, Time, false);
+}
+
+void AKartPawnBase::ResetBoost()
+{
+	SpeedModifier = 1.0f; // Reset the speed modifier to normal
 }
 
 bool AKartPawnBase::bIsOnTheGround()
