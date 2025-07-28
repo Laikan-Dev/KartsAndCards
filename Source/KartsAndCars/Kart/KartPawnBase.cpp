@@ -125,6 +125,7 @@ void AKartPawnBase::Tick(float DeltaTime)
 	}
 	CalculateAccelerationForce();
 	GetTrackProgress();
+	bIsTopple();
 }
 
 // Called to bind functionality to input
@@ -282,5 +283,25 @@ float AKartPawnBase::GetCourseProgress()
 	float Value = Distance / TrackSpline->SplineComponent->GetSplineLength() + Laps;
 
 	return Value;
+}
+
+bool AKartPawnBase::bIsTopple()
+{
+	float UpVector = UKismetMathLibrary::Dot_VectorVector(GetActorUpVector(), FVector(0.f, 0.f, 1.f));
+	if (UpVector < 0.8f && !ResetPosTimer.IsValid())
+	{
+		GetWorld()->GetTimerManager().SetTimer(ResetPosTimer, this, &AKartPawnBase::ResetPosition, 3.0f, false);
+	}
+	return false;
+}
+
+void AKartPawnBase::ResetPosition()
+{
+	ResetPosTimer.Invalidate();
+	FVector Loc = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
+	FRotator Rot = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).Rotation();
+	SetActorLocationAndRotation(Loc, Rot);
+	AccelerationInput = 0.0f; // Reset acceleration input
+
 }
 

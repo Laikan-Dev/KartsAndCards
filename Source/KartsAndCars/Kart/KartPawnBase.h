@@ -118,6 +118,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Track")
 	int32 Laps;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Track")
+	FTimerHandle ResetPosTimer;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -153,5 +155,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Track")
 	float GetCourseProgress();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Track")
+	bool bIsTopple();
+
+	UFUNCTION(BlueprintCallable, Category = "Track")
+	void ResetPosition();
 
 };
