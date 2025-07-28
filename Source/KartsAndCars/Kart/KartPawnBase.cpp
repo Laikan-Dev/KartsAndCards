@@ -45,12 +45,12 @@ AKartPawnBase::AKartPawnBase()
 
 	// Create and set up the Kart mesh component
 	KartMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("KartMesh"));
-	KartMesh->SetupAttachment(CollisionBox);
+	KartMesh->SetupAttachment(PivotPoint);
 	KartMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
 	// Set the spring arm component
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(CollisionBox);
+	SpringArm->SetupAttachment(PivotPoint);
 	SpringArm->bUsePawnControlRotation = false; // Allow the spring arm to use the pawn's control rotation
 	SpringArm->bEnableCameraRotationLag = true; // Enable camera rotation lag
 
@@ -60,28 +60,28 @@ AKartPawnBase::AKartPawnBase()
 
 	// Create wheel components and attach them to the root component
 	FLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FLWheel"));
-	FLWheel->SetupAttachment(CollisionBox);
+	FLWheel->SetupAttachment(PivotPoint);
 	FLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FLWheelMesh"));
 	FLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	FLWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	FLWheelMesh->SetupAttachment(FLWheel);
 
 	FRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FRWheel"));
-	FRWheel->SetupAttachment(CollisionBox);
+	FRWheel->SetupAttachment(PivotPoint);
 	FRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FRWheelMesh"));
 	FRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	FRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	FRWheelMesh->SetupAttachment(FRWheel);
 
 	BLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BLWheel"));
-	BLWheel->SetupAttachment(CollisionBox);
+	BLWheel->SetupAttachment(PivotPoint);
 	BLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BLWheelMesh"));
 	BLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	BLWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	BLWheelMesh->SetupAttachment(BLWheel);
 
 	BRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BRWheel"));
-	BRWheel->SetupAttachment(CollisionBox);
+	BRWheel->SetupAttachment(PivotPoint);
 	BRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BRWheelMesh"));
 	BRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	BRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
@@ -148,6 +148,12 @@ void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 		EnhancedInputComponent->BindAction(AcelerateAction, ETriggerEvent::Triggered, this, &AKartPawnBase::AccelerateEntry);
 		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AKartPawnBase::SteerEntry);
+
+		//Drift
+		EnhancedInputComponent->BindAction(DriftAction, ETriggerEvent::Triggered, this, &AKartPawnBase::DriftEntry);
+		EnhancedInputComponent->BindAction(DriftAction, ETriggerEvent::Completed, this, &AKartPawnBase::StopDrift);
+		EnhancedInputComponent->BindAction(DriftAction, ETriggerEvent::Canceled, this, &AKartPawnBase::StopDrift);
+
 	}
 }
 
@@ -231,6 +237,22 @@ void AKartPawnBase::Steer(float Value)
 
 	FLWheel->SetRelativeRotation(FRotator(0.0f, RotationToFrontWheels, 0.0f));
 	FRWheel->SetRelativeRotation(FRotator(0.0f, RotationToFrontWheels, 0.0f));
+}
+
+void AKartPawnBase::DriftEntry()
+{
+	StartDrift();
+}
+
+void AKartPawnBase::StartDrift()
+{
+	SteeringMultiplier = 4.0f; // Reduce steering multiplier for drifting
+	bIsDrifting = true; // Set drifting state to true
+
+}
+
+void AKartPawnBase::StopDrift()
+{
 }
 
 void AKartPawnBase::BoostKart(float Speed, float Time)

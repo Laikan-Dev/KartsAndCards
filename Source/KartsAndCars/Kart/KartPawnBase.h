@@ -30,6 +30,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
 	USceneComponent* RootComp;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	USceneComponent* PivotPoint;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* KartMesh;
 
@@ -51,6 +54,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Input")
 	UInputAction* SteeringAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Input")
+	UInputAction* DriftAction;
 
 	
 	
@@ -104,6 +110,15 @@ public:
 	float AccelerationInput;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	bool bIsDrifting;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float DriftSteer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	FRotator DriftRotation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	TArray<USceneComponent*> Wheels; // Array to hold all wheel components
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
@@ -140,6 +155,9 @@ public:
 	void CalculateAcceleratingBouce(USceneComponent* WheelComp);
 	void SteerEntry(const FInputActionValue& Value);
 	virtual void Steer(float Value);
+	void DriftEntry();
+	virtual void StartDrift();
+	virtual void StopDrift();
 
 	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
 	void BoostKart(float Speed, float Time);
