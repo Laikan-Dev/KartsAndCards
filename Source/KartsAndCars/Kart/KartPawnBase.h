@@ -86,7 +86,19 @@ public:
 	float KartBoucingForce = 90000.f; // Force applied to the wheels for suspension
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float DownForce = -60000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float SteeringTorque = 2000000;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float SteeringMultiplier = 2.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	float AccelerationForce;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float MaxAcceleration = 15000;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	float AccelerationInput;
@@ -138,5 +150,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
 	bool GetTrackProgress();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Track")
+	float GetCourseProgress();
 
 };

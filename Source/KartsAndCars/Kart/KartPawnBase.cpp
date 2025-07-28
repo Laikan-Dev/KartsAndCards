@@ -30,8 +30,11 @@ AKartPawnBase::AKartPawnBase()
 
 	// Set the box collision component
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	CollisionBox->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Ignore);
 	CollisionBox->SetCollisionResponseToAllChannels(ECR_Block);
+	CollisionBox->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Ignore);
+	CollisionBox->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
+	CollisionBox->SetMassOverrideInKg(NAME_None, 2000.f, true); // Set a mass for the kart
+	CollisionBox->SetCenterOfMass(FVector(-30.f, 0.f, 0.f)); // Adjust the center of mass for better stability
 
 	// Set config for the boucing
 	CollisionBox->SetSimulatePhysics(true);
@@ -43,6 +46,7 @@ AKartPawnBase::AKartPawnBase()
 	// Create and set up the Kart mesh component
 	KartMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("KartMesh"));
 	KartMesh->SetupAttachment(CollisionBox);
+	KartMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
 	// Set the spring arm component
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -59,24 +63,28 @@ AKartPawnBase::AKartPawnBase()
 	FLWheel->SetupAttachment(CollisionBox);
 	FLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FLWheelMesh"));
 	FLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	FLWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	FLWheelMesh->SetupAttachment(FLWheel);
 
 	FRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FRWheel"));
 	FRWheel->SetupAttachment(CollisionBox);
 	FRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FRWheelMesh"));
 	FRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	FRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	FRWheelMesh->SetupAttachment(FRWheel);
 
 	BLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BLWheel"));
 	BLWheel->SetupAttachment(CollisionBox);
 	BLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BLWheelMesh"));
 	BLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	BLWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	BLWheelMesh->SetupAttachment(BLWheel);
 
 	BRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BRWheel"));
 	BRWheel->SetupAttachment(CollisionBox);
 	BRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BRWheelMesh"));
 	BRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
+	BRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	BRWheelMesh->SetupAttachment(BRWheel);
 
 }
@@ -176,7 +184,7 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 
 void AKartPawnBase::CalculateAccelerationForce()
 {
-	AccelerationForce = AccelerationInput * FMath::Lerp(0.0, 15000.0, AccelerationInput);
+	AccelerationForce = AccelerationInput * FMath::Lerp(0.0, MaxAcceleration, AccelerationInput);
 	AccelerationInput = FMath::FInterpTo(AccelerationInput, 0.0, GetWorld()->GetDeltaSeconds(), 0.3);
 
 	for (UStaticMeshComponent* Wheel : WheelMeshes)
@@ -199,7 +207,7 @@ void AKartPawnBase::Accelerate(float Value)
 void AKartPawnBase::CalculateAcceleratingBouce(USceneComponent* WheelComp)
 {
 	FVector MovingBouce = CollisionBox->GetForwardVector() * 2000.f * AccelerationInput * CollisionBox->GetMass() * SpeedModifier;
-	FVector ForceCalc = UKismetMathLibrary::SelectVector(FVector::ZeroVector, FVector(0.0, 0.0, -30000.0), bIsOnTheGround());
+	FVector ForceCalc = UKismetMathLibrary::SelectVector(FVector::ZeroVector, FVector(0.0, 0.0, DownForce), bIsOnTheGround());
 	FVector ForceDirection = MovingBouce + ForceCalc;
 	CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
 
@@ -214,7 +222,7 @@ void AKartPawnBase::SteerEntry(const FInputActionValue& Value)
 
 void AKartPawnBase::Steer(float Value)
 {
-	float SteeringInput = Value * 1000000 * AccelerationInput;
+	float SteeringInput = Value * SteeringTorque * (AccelerationInput * SteeringMultiplier);
 	FVector Torque = FVector(0.0, 0.0, SteeringInput);
 	CollisionBox->AddTorqueInRadians(Torque);
 
@@ -265,5 +273,14 @@ bool AKartPawnBase::GetTrackProgress()
 		return bIsOnTrack;
 	}
 	return false;
+}
+
+float AKartPawnBase::GetCourseProgress()
+{
+	FVector ClosestLoc = TrackSpline->SplineComponent->FindLocationClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
+	float Distance = TrackSpline->SplineComponent->GetDistanceAlongSplineAtLocation(ClosestLoc, ESplineCoordinateSpace::World);
+	float Value = Distance / TrackSpline->SplineComponent->GetSplineLength() + Laps;
+
+	return Value;
 }
 

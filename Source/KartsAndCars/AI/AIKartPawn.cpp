@@ -41,13 +41,14 @@ void AAIKartPawn::Steer(float Value)
 
 float AAIKartPawn::GetAISteering()
 {
-	FVector ToForwardVec = GetActorForwardVector() * 500.0f;
+	FVector ToForwardVec = GetActorForwardVector() * 700.f;
 	FVector ToProduct = TrackSpline->SplineComponent->FindDirectionClosestToWorldLocation(GetActorLocation() + ToForwardVec, ESplineCoordinateSpace::World);
 	float Direction = UKismetMathLibrary::Dot_VectorVector(ToProduct, GetActorRightVector());
-	float ToPow = FMath::Abs(Direction) + 1.0f;
+	float ToPow = UKismetMathLibrary::Abs(Direction) + 1.0f;
 	float Power = FMath::Pow(Direction, 2.0f); // Adjust the steering value based on the track direction
-	float SteerValue = Power * AccelerationForce;
+	float SteerValue = Direction * AccelerationForce * Power;
 	return SteerValue;
+	
 }
 
 float AAIKartPawn::GetAIThrottle()
@@ -55,7 +56,8 @@ float AAIKartPawn::GetAIThrottle()
 
 	FVector Direction = TrackSpline->SplineComponent->FindDirectionClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
 	float Dot = UKismetMathLibrary::Dot_VectorVector(Direction, GetActorForwardVector());
-	float Value = FMath::Clamp(UKismetMathLibrary::Abs(Dot), 0.5f, 1.0f) * FMath::Sign(Dot);
+	float AbsDot = UKismetMathLibrary::Abs(Dot);
+	float Value = FMath::Clamp(AbsDot, 0.5f, 1.0f) * FMath::Sign(Dot);
 
 	return Value;
 	
