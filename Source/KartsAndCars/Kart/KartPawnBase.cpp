@@ -61,6 +61,7 @@ AKartPawnBase::AKartPawnBase()
 	// Create wheel components and attach them to the root component
 	FLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FLWheel"));
 	FLWheel->SetupAttachment(PivotPoint);
+	FLWheel->ComponentTags.Add(TEXT("FrontWheel")); // Tag for identification
 	FLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FLWheelMesh"));
 	FLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	FLWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
@@ -68,6 +69,7 @@ AKartPawnBase::AKartPawnBase()
 
 	FRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FRWheel"));
 	FRWheel->SetupAttachment(PivotPoint);
+	FRWheel->ComponentTags.Add(TEXT("FrontWheel")); // Tag for identification
 	FRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FRWheelMesh"));
 	FRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	FRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
@@ -75,6 +77,7 @@ AKartPawnBase::AKartPawnBase()
 
 	BLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BLWheel"));
 	BLWheel->SetupAttachment(PivotPoint);
+	BLWheel->ComponentTags.Add(TEXT("BackWheel")); // Tag for identification
 	BLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BLWheelMesh"));
 	BLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	BLWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
@@ -82,6 +85,7 @@ AKartPawnBase::AKartPawnBase()
 
 	BRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BRWheel"));
 	BRWheel->SetupAttachment(PivotPoint);
+	BRWheel->ComponentTags.Add(TEXT("BackWheel")); // Tag for identification
 	BRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BRWheelMesh"));
 	BRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
 	BRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
@@ -158,8 +162,17 @@ void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 }
 
 void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
-
 {
+	float WheelValue;
+	if (WheelComp->ComponentHasTag(TEXT("FrontWheel")))
+	{
+		WheelValue = FrontWheelRadius;
+	}
+	else if (WheelComp->ComponentHasTag(TEXT("BackWheel")))
+	{
+		WheelValue = BackWheelRadius;
+	}
+
 	FHitResult HitResult;
 	FVector Start = WheelComp->GetComponentToWorld().GetLocation();
 	FVector End = WheelComp->GetUpVector() * -60.f + Start;
@@ -177,7 +190,7 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 		FVector ForceDirection = DistanceResult * DirectionResult * KartBoucingForce;
 		CollisionBox->AddForceAtLocation(ForceDirection, WheelComp->GetComponentToWorld().GetLocation());
 
-		float WheelBoucingDistance = HitResult.Distance * -1.f + WheelRadius; // Adjust the distance to apply the boucing force
+		float WheelBoucingDistance = HitResult.Distance * -1.f + (WheelValue / 2.0f); // Adjust the distance to apply the boucing force
 		float WheelLocationZ = FMath::FInterpTo(WheelComp->GetChildComponent(0)->GetRelativeLocation().Z, WheelBoucingDistance, GetWorld()->GetDeltaSeconds(), 3.f);
 		FVector WheelLocation(0.f, 0.f, WheelLocationZ);
 		WheelComp->GetChildComponent(0)->SetRelativeLocation(WheelLocation);

@@ -83,7 +83,9 @@ protected:
 	UStaticMeshComponent* BRWheelMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
-	float WheelRadius = 32.f; // Radius of the wheels for suspension calculations
+	float BackWheelRadius = 64.0f; // Radius of the wheels for suspension calculations
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
+	float FrontWheelRadius = 64.0f; // Radius of the wheels for suspension calculations
 
 
 
