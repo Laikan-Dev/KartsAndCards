@@ -13,5 +13,7 @@ UCLASS()
 class KARTSANDCARS_API AKartPlayerState : public APlayerState
 {
 	GENERATED_BODY()
-	
+
+public:
+	AKartPlayerState();
 };

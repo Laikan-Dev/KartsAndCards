@@ -45,12 +45,12 @@ AKartPawnBase::AKartPawnBase()
 
 	// Create and set up the Kart mesh component
 	KartMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("KartMesh"));
-	KartMesh->SetupAttachment(PivotPoint);
+	KartMesh->SetupAttachment(CollisionBox);
 	KartMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
 	// Set the spring arm component
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(PivotPoint);
+	SpringArm->SetupAttachment(CollisionBox);
 	SpringArm->bUsePawnControlRotation = false; // Allow the spring arm to use the pawn's control rotation
 	SpringArm->bEnableCameraRotationLag = true; // Enable camera rotation lag
 
@@ -60,7 +60,7 @@ AKartPawnBase::AKartPawnBase()
 
 	// Create wheel components and attach them to the root component
 	FLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FLWheel"));
-	FLWheel->SetupAttachment(PivotPoint);
+	FLWheel->SetupAttachment(CollisionBox);
 	FLWheel->ComponentTags.Add(TEXT("FrontWheel")); // Tag for identification
 	FLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FLWheelMesh"));
 	FLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
@@ -68,7 +68,7 @@ AKartPawnBase::AKartPawnBase()
 	FLWheelMesh->SetupAttachment(FLWheel);
 
 	FRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("FRWheel"));
-	FRWheel->SetupAttachment(PivotPoint);
+	FRWheel->SetupAttachment(CollisionBox);
 	FRWheel->ComponentTags.Add(TEXT("FrontWheel")); // Tag for identification
 	FRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FRWheelMesh"));
 	FRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
@@ -76,7 +76,7 @@ AKartPawnBase::AKartPawnBase()
 	FRWheelMesh->SetupAttachment(FRWheel);
 
 	BLWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BLWheel"));
-	BLWheel->SetupAttachment(PivotPoint);
+	BLWheel->SetupAttachment(CollisionBox);
 	BLWheel->ComponentTags.Add(TEXT("BackWheel")); // Tag for identification
 	BLWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BLWheelMesh"));
 	BLWheelMesh->SetCollisionObjectType(ECC_Vehicle);
@@ -84,7 +84,7 @@ AKartPawnBase::AKartPawnBase()
 	BLWheelMesh->SetupAttachment(BLWheel);
 
 	BRWheel = CreateDefaultSubobject<USceneComponent>(TEXT("BRWheel"));
-	BRWheel->SetupAttachment(PivotPoint);
+	BRWheel->SetupAttachment(CollisionBox);
 	BRWheel->ComponentTags.Add(TEXT("BackWheel")); // Tag for identification
 	BRWheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BRWheelMesh"));
 	BRWheelMesh->SetCollisionObjectType(ECC_Vehicle);
