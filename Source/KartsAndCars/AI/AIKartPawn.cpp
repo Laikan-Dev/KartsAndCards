@@ -7,13 +7,16 @@
 #include "Components/SplineComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Math/DoubleFloat.h"
+#include "KartsAndCars/AbilitySystem/KartAbilitySystemComponent.h"
 AAIKartPawn::AAIKartPawn()
 {
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 }
 
 void AAIKartPawn::BeginPlay()
 {
 	Super::BeginPlay();
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 }
 

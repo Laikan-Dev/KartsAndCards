@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "AbilitySystemInterface.h"
 #include "KartPawnBase.generated.h"
 
 class UStaticMeshComponent;
@@ -14,8 +15,11 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 class ATrackSpline;
+
+class UAbilitySystemComponent;
+class UAttributeSet;
 UCLASS()
-class KARTSANDCARS_API AKartPawnBase : public APawn
+class KARTSANDCARS_API AKartPawnBase : public APawn, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -23,6 +27,12 @@ public:
 	// Sets default values for this pawn's properties
 	AKartPawnBase();
 
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UAttributeSet* GetKartAttributeSet() const { return KartAttributeSet; }
+
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	void InitAbilityActorInfo();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -59,8 +69,6 @@ protected:
 	UInputAction* DriftAction;
 
 	
-	
-	
 	// Wheel components for the kart
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	USceneComponent* FLWheel;
@@ -87,6 +95,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Kart Properties")
 	float FrontWheelRadius = 64.0f; // Radius of the wheels for suspension calculations
 
+
+	//AbilitySystem
+	UPROPERTY()
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY()
+	TObjectPtr<UAttributeSet> KartAttributeSet;
 
 
 public:

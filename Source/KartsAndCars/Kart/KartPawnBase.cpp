@@ -17,6 +17,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "KartsAndCars/Track/TrackSpline.h"
 #include "Components/SplineComponent.h"
+#include "KartsAndCars/AbilitySystem/KartAbilitySystemComponent.h"
+#include "KartsAndCars/AbilitySystem/KartAttributeSet.h"
+#include "KartsAndCars/Kart/KartPlayerState.h"
 
 
 // Sets default values
@@ -24,9 +27,13 @@ AKartPawnBase::AKartPawnBase()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	//AbilitySystem Defaults
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
 
-	// Create and set up the root component
-	//RootComp = CreateDefaultSubobject<USceneComponent>(TEXT("RootComp"));
+	KartAttributeSet = CreateDefaultSubobject<UAttributeSet>(TEXT("KartAttributeSet"));
+	
 
 	// Set the box collision component
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
@@ -91,6 +98,31 @@ AKartPawnBase::AKartPawnBase()
 	BRWheelMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 	BRWheelMesh->SetupAttachment(BRWheel);
 
+}
+
+UAbilitySystemComponent* AKartPawnBase::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+void AKartPawnBase::PossessedBy(AController* NewController)
+{
+	InitAbilityActorInfo();	
+}
+
+void AKartPawnBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	InitAbilityActorInfo();
+}
+
+void AKartPawnBase::InitAbilityActorInfo()
+{
+	AKartPlayerState* KartPlayerState = GetPlayerState<AKartPlayerState>();
+	check(KartPlayerState);
+	KartPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(KartPlayerState, this);
+	AbilitySystemComponent = KartPlayerState->GetAbilitySystemComponent();
+	KartAttributeSet = KartPlayerState->GetKartAttributeSet();
 }
 
 // Called when the game starts or when spawned
