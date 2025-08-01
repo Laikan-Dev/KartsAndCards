@@ -3,10 +3,16 @@
 
 #include "KartAttributeSet.h"
 #include "Net/UnrealNetwork.h"
-#include "AbilitySystemComponent.h"
+
 
 UKartAttributeSet::UKartAttributeSet()
 {
+	// Initialize attributes with default values
+	InitSpeed(0.0);
+	InitMaxSpeed(100.0);
+	InitNitro(0.0);
+	InitMaxNitro(100.0);
+	
 }
 
 void UKartAttributeSet::OnRep_Speed(const FGameplayAttributeData& OldSpeed)
