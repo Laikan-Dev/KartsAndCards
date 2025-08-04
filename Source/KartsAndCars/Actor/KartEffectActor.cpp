@@ -26,10 +26,13 @@ void AKartEffectActor::BeginPlay()
 
 void AKartEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
 {
-	
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
-	
-	check(TargetASC == nullptr) return;
+
+	// Fix: Replace 'check' with an if-statement to avoid unreachable code
+	if (TargetASC == nullptr)
+	{
+		return;
+	}
 
 	check(GameplayEffectClass);
 	FGameplayEffectContextHandle EffectContextHandle = TargetASC->MakeEffectContext();

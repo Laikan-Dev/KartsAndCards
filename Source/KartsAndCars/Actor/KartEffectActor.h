@@ -22,10 +22,11 @@ protected:
 
 protected:
 
+	UFUNCTION(BlueprintCallable)
 	void ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Applied Effects")
-	TObjectPtr<UGameplayEffect> InstantGameplayEffectClass;
+	TSubclassOf<UGameplayEffect> InstantGameplayEffectClass;
 
 	
 
