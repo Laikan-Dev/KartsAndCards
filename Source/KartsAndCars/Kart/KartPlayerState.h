@@ -8,7 +8,7 @@
 #include "KartPlayerState.generated.h"
 
 class UAbilitySystemComponent;
-class UAttributeSet;
+class UKartAttributeSet;
 /**
  * 
  */
@@ -21,7 +21,7 @@ public:
 	AKartPlayerState();
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	UAttributeSet* GetKartAttributeSet() const { return KartAttributeSet; }
+	virtual UKartAttributeSet* GetAttributeSet() const;
 
 protected:
 	//AbilitySystem
@@ -29,5 +29,5 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
-	TObjectPtr<UAttributeSet> KartAttributeSet;
+	TObjectPtr<UKartAttributeSet> KartAttributeSet;
 };

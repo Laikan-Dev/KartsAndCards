@@ -3,8 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Pawn.h"
 #include "AbilitySystemInterface.h"
+#include "KartsAndCars/AbilitySystem/KartAttributeSet.h"
 #include "KartPawnBase.generated.h"
 
 class UStaticMeshComponent;
@@ -15,9 +17,9 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 class ATrackSpline;
-
 class UAbilitySystemComponent;
 class UAttributeSet;
+
 UCLASS()
 class KARTSANDCARS_API AKartPawnBase : public APawn, public IAbilitySystemInterface
 {
@@ -27,12 +29,14 @@ public:
 	// Sets default values for this pawn's properties
 	AKartPawnBase();
 
+	
+	//AbilitySystem
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	UAttributeSet* GetKartAttributeSet() const { return KartAttributeSet; }
-
+	virtual UKartAttributeSet* GetAttributeSet() const;
 	virtual void PossessedBy(AController* NewController) override;
-	virtual void OnRep_PlayerState() override;
-	void InitAbilityActorInfo();
+
+private:
+	void InitAbilitySystemComponent();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -101,7 +105,19 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
-	TObjectPtr<UAttributeSet> KartAttributeSet;
+	TObjectPtr<UKartAttributeSet> KartAttributeSet;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Abilities")
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+
+	UFUNCTION(BlueprintCallable)
+	void GiveDefaultAbilities();
+	void InitDefaultAttributes() const;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+
+	virtual void OnRep_PlayerState() override;
 
 
 public:
@@ -166,6 +182,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Kart Functions")
 	void CalculateAccelerationForce();
 
+	UFUNCTION(BlueprintCallable)
+	void ApplyBoostEffect(TSubclassOf<UGameplayEffect> GEClass, float level);
 	//Input action Functions
 	void AccelerateEntry(const FInputActionValue& Value);
 	virtual void Accelerate(float Value);
@@ -196,5 +214,5 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Track")
 	void ResetPosition();
-
+	
 };

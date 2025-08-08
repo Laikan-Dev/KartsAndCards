@@ -17,6 +17,7 @@ void AAIKartPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	GiveDefaultAbilities();
 
 }
 

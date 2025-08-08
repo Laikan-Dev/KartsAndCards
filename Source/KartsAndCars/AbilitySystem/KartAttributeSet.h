@@ -13,8 +13,12 @@
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName) \
-	
 
+#define NUMERIC_VALUE(AttributeSetName, PropertyName) \
+	AttributeSetName->Get##PropertyName##Attribute().GetNumericValue(AttributeSetName)
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FAttributeChangedEvent, UAttributeSet*, AttributeSet, float, OldValue, float, NewValue);
 /**
  * 
  */
@@ -24,10 +28,13 @@ class KARTSANDCARS_API UKartAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 public:
 	UKartAttributeSet();
-
+//Atribuites
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Speed, Category = "Vital Attributes")
 	FGameplayAttributeData Speed;
 	ATTRIBUTE_ACCESSORS(UKartAttributeSet, Speed);
+
+	UPROPERTY(BlueprintAssignable)
+	FAttributeChangedEvent OnSpeedChanged;
 
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxSpeed, Category = "Vital Attributes")
 	FGameplayAttributeData MaxSpeed;
@@ -41,6 +48,7 @@ public:
 	FGameplayAttributeData MaxNitro;
 	ATTRIBUTE_ACCESSORS(UKartAttributeSet, MaxNitro);
 
+	//Replication Func
 	UFUNCTION()
 	void OnRep_Speed(const FGameplayAttributeData& OldSpeed);
 	UFUNCTION()
@@ -52,5 +60,10 @@ public:
 	void OnRep_MaxNitro(const FGameplayAttributeData& OldMaxNitro);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	//Rules
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	
 };

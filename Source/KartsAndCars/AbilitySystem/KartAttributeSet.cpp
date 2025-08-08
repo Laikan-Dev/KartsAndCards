@@ -3,6 +3,7 @@
 
 #include "KartAttributeSet.h"
 #include "Net/UnrealNetwork.h"
+#include "GameplayEffectExtension.h"
 
 
 UKartAttributeSet::UKartAttributeSet()
@@ -18,11 +19,16 @@ UKartAttributeSet::UKartAttributeSet()
 void UKartAttributeSet::OnRep_Speed(const FGameplayAttributeData& OldSpeed)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UKartAttributeSet, Speed, OldSpeed);
+	const float OldValue = OldSpeed.GetCurrentValue();
+	const float NewSpeed = GetSpeed();
+	OnSpeedChanged.Broadcast(this, OldValue, NewSpeed);
 }
 
 void UKartAttributeSet::OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxSpeed)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UKartAttributeSet, MaxSpeed, OldMaxSpeed);
+	const float CurrentSpeed = GetSpeed();
+	OnSpeedChanged.Broadcast(this, CurrentSpeed, CurrentSpeed);
 }
 
 void UKartAttributeSet::OnRep_Nitro(const FGameplayAttributeData& OldNitro)
@@ -43,4 +49,40 @@ void UKartAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION_NOTIFY(UKartAttributeSet, MaxSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UKartAttributeSet, Nitro, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UKartAttributeSet, MaxNitro, COND_None, REPNOTIFY_Always);
+}
+
+void UKartAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	if (Attribute == GetSpeedAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxSpeed());
+	}
+	Super::PreAttributeChange(Attribute, NewValue);
+}
+
+void UKartAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	if (Attribute == GetSpeedAttribute())
+	{
+		OnSpeedChanged.Broadcast(this, OldValue, NewValue);
+	}
+	else if (Attribute == GetMaxSpeedAttribute())
+	{
+		const float CurrentSpeed = GetSpeed();
+		OnSpeedChanged.Broadcast(this, CurrentSpeed, NewValue);
+	}
+}
+
+void UKartAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+	if (Data.EvaluatedData.Attribute == GetSpeedAttribute())
+	{
+		SetSpeed(FMath::Clamp(GetSpeed(), 0.0f, GetMaxSpeed()));
+	}
+	UAbilitySystemComponent* ASC = Data.EffectSpec.GetContext().GetInstigatorAbilitySystemComponent();
+	AActor* ASCOwner = ASC->AbilityActorInfo->OwnerActor.Get();
+	ASCOwner->GetActorLocation();
 }

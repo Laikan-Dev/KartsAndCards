@@ -14,6 +14,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
+#include "LocalizationTargetTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "KartsAndCars/Track/TrackSpline.h"
 #include "Components/SplineComponent.h"
@@ -32,9 +33,8 @@ AKartPawnBase::AKartPawnBase()
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 
-	KartAttributeSet = CreateDefaultSubobject<UAttributeSet>(TEXT("KartAttributeSet"));
+	KartAttributeSet = CreateDefaultSubobject<UKartAttributeSet>(TEXT("KartAttributesSet"));
 	
-
 	// Set the box collision component
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
 	CollisionBox->SetCollisionResponseToAllChannels(ECR_Block);
@@ -105,24 +105,29 @@ UAbilitySystemComponent* AKartPawnBase::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-void AKartPawnBase::PossessedBy(AController* NewController)
+UKartAttributeSet* AKartPawnBase::GetAttributeSet() const
 {
-	InitAbilityActorInfo();	
+	return KartAttributeSet;
 }
 
-void AKartPawnBase::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-	InitAbilityActorInfo();
-}
-
-void AKartPawnBase::InitAbilityActorInfo()
+void AKartPawnBase::InitAbilitySystemComponent()
 {
 	AKartPlayerState* KartPlayerState = GetPlayerState<AKartPlayerState>();
-	check(KartPlayerState);
-	KartPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(KartPlayerState, this);
-	AbilitySystemComponent = KartPlayerState->GetAbilitySystemComponent();
-	KartAttributeSet = KartPlayerState->GetKartAttributeSet();
+	if (IsValid(KartPlayerState))
+	{
+		AbilitySystemComponent = CastChecked<UAbilitySystemComponent>(KartPlayerState->GetAbilitySystemComponent());
+		AbilitySystemComponent->InitAbilityActorInfo(KartPlayerState, this);
+		KartAttributeSet = KartPlayerState->GetAttributeSet();
+	}
+	
+}
+
+void AKartPawnBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	InitAbilitySystemComponent();
+	GiveDefaultAbilities();
+	InitDefaultAttributes();
 }
 
 // Called when the game starts or when spawned
@@ -145,6 +150,42 @@ void AKartPawnBase::BeginPlay()
 	}
 	TSubclassOf<ATrackSpline> TrackSplineClass = ATrackSpline::StaticClass();
 	TrackSpline = Cast<ATrackSpline>(UGameplayStatics::GetActorOfClass(GetWorld(), TrackSplineClass));
+}
+
+
+void AKartPawnBase::GiveDefaultAbilities()
+{
+	check(AbilitySystemComponent);
+	if (!HasAuthority()) return;
+
+	for (TSubclassOf<UGameplayAbility> AbilityClass : DefaultAbilities)
+	{
+		const FGameplayAbilitySpec AbilitySpec(AbilityClass, 1);
+		AbilitySystemComponent->GiveAbility(AbilitySpec);
+	}
+}
+
+void AKartPawnBase::InitDefaultAttributes() const
+{
+	if (!AbilitySystemComponent || !DefaultAttributeEffect) {return;}
+	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1.f,EffectContext);
+
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}
+
+void AKartPawnBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	InitAbilitySystemComponent();
+	InitDefaultAttributes();
+
+	AccelerationForce = NUMERIC_VALUE(KartAttributeSet, Speed) / NUMERIC_VALUE(KartAttributeSet, MaxSpeed);
 }
 
 // Called every frame
@@ -177,7 +218,7 @@ void AKartPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 			Subsystem->AddMappingContext(KartInputMappingContext, 0);
 		}
 	}
-
+ 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		//Bind the action inputs
@@ -231,6 +272,7 @@ void AKartPawnBase::HandleSuspension(USceneComponent* WheelComp)
 	else
 	{
 		CalculateAcceleratingBouce(WheelComp);
+		
 	}
 }
 
@@ -242,6 +284,17 @@ void AKartPawnBase::CalculateAccelerationForce()
 	for (UStaticMeshComponent* Wheel : WheelMeshes)
 	{
 		Wheel->AddLocalRotation(FRotator(AccelerationForce / -1000.0f, 0.0f, 0.0f));
+	}
+}
+
+void AKartPawnBase::ApplyBoostEffect(TSubclassOf<UGameplayEffect> GEClass, float level)
+{
+	FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(GEClass, level, ContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green,TEXT("Funfou"));
 	}
 }
 
@@ -293,7 +346,6 @@ void AKartPawnBase::StartDrift()
 {
 	SteeringMultiplier = 4.0f; // Reduce steering multiplier for drifting
 	bIsDrifting = true; // Set drifting state to true
-
 }
 
 void AKartPawnBase::StopDrift()
@@ -302,6 +354,7 @@ void AKartPawnBase::StopDrift()
 
 void AKartPawnBase::BoostKart(float Speed, float Time)
 {
+	
 	SpeedModifier = Speed; // Set the speed modifier to the boost speed
 	FTimerHandle BoostTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(BoostTimerHandle, this, &AKartPawnBase::ResetBoost, Time, false);
